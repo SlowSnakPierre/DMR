@@ -1,9 +1,10 @@
---[[
-    "StartupFunction"
-]]
-
 local module = {}
 local Core = shared.Core
+local SignalProvider = Core.Get("SignalProvider")
+module.Startup = SignalProvider:Get("StartupFunctions")
+module.Thermals = SignalProvider:Get("ThermalFunctions")
+module.PowerLasers = SignalProvider:Get("PowerLaserFunctions")
+module.Coolant = SignalProvider:Get("CoolantFunctions")
 
 local RanObj = Random.new(6969)
 
@@ -48,10 +49,6 @@ local Global = Core.Get("Global")
 local CFMS = Core.Get("CFMS")
 local Energy = Core.Get("CoolEffectsScript")
 
-local PowerLasers = Core.Get("PowerLasers", true)
-local Thermals = Core.Get("Thermals", true)
-local Coolant = Core.Get("Coolant", true)
-
 local Connections = {}
 
 --#region Functions
@@ -59,28 +56,28 @@ local Functions = {}
 
 function Functions:endMusic()
     task.wait(20)
-    TweenService:Create(Global.FindAudio("Startup"), TweenInfo.new(15), { Volume = 0 }):Play()
+    TweenService:Create(Global:FindAudio("Startup"), TweenInfo.new(15), { Volume = 0 }):Play()
 
     task.wait(15)
-    Global.FindAudio("Startup"):Stop()
+    Global:FindAudio("Startup"):Stop()
 end
 
 function Functions:dmrStartup()
     CanTurn = false
     if StartupType == "Default" then
         Network:SignalAll("Notification", "Dark Matter Reactor ignition sequence initiated.", "none", 5)
-        Audios.HumanAnnouncements.Announcements.Disabled = false
+        -- Audios.HumanAnnouncements.Announcements.Disabled = false
         Controls.ShutdownPanel.Shutdown.OfflineNotice.TextLabel.Text = "PENDING REACTOR IGNITION SEQUENCE COMPLETION..."
 
         for _, v in pairs(Monitors:GetChildren()) do
             v.OfflineNotice.TextLabel.Text = "PENDING REACTOR IGNITION SEQUENCE COMPLETION..."
         end
 
-        Global.FindAudio("Ignition_Initialized"):Play()
-        task.wait(Global.FindAudio("Ignition_Initialized").TimeLength + 2)
-        Global.FindAudio("Powerlaser"):Play()
+        Global:FindAudio("Ignition_Initialized"):Play()
+        task.wait(Global:FindAudio("Ignition_Initialized").TimeLength + 2)
+        Global:FindAudio("Powerlaser"):Play()
 
-        Global.FindAudio("Startup"):Play()
+        Global:FindAudio("Startup"):Play()
 
         for i = 1, 3 do
             TweenService:Create(Reactor.MainStabalizer["Red" .. i], TweenInfo.new(9), { Transparency = 0 }):Play()
@@ -92,16 +89,16 @@ function Functions:dmrStartup()
 
         task.wait(9)
 
-        Global.FindAudio("Gravity_Laser_online"):Play()
+        Global:FindAudio("Gravity_Laser_online"):Play()
 
-        task.wait(Global.FindAudio("Gravity_Laser_online").TimeLength)
+        task.wait(Global:FindAudio("Gravity_Laser_online").TimeLength)
 
-        Global.FindAudio("Raising_Core"):Play()
-        Global.TweenModel(ReactorCore, Reactor.CoreRaised.CFrame, true, 15)
+        Global:FindAudio("Raising_Core"):Play()
+        Global:TweenModel(ReactorCore, Reactor.CoreRaised.CFrame, true, 15)
 
         --StartCodex:Fire()
 
-        Global.FindAudio("DMR_Raised"):Play()
+        Global:FindAudio("DMR_Raised"):Play()
 
         task.wait(6)
     end
@@ -117,12 +114,12 @@ function Functions:dmrStartup()
         end
     end
 
-    Global.FindAudio("Activate_Lasers"):Play()
+    Global:FindAudio("Activate_Lasers"):Play()
 
     task.wait(3)
 
-    Global.FindAudio("Opening_valves"):Play()
-    Global.FindAudio("InitPower"):Play()
+    Global:FindAudio("Opening_valves"):Play()
+    Global:FindAudio("InitPower"):Play()
 
     Network:SignalAll("Shake", math.random(50, 75), 10)
 
@@ -133,7 +130,7 @@ function Functions:dmrStartup()
     end
 
     ReactorCore.Core.Sound:Play()
-    PowerLasers.Functions:DramaticStartup()
+    module.PowerLasers:Fire("DramaticStartup")
 
     task.wait(1)
 
@@ -147,10 +144,10 @@ function Functions:dmrStartup()
 
     if Ran == 2 then
         CFMS.AlarmsOperations(0)
-        Global.FindAudio("outage"):Play()
+        Global:FindAudio("outage"):Play()
 
         TweenService:Create(Modules.Thermals:WaitForChild("Radiation"), TweenInfo.new(9), { Value = 0 }):Play()
-        TweenService:Create(Global.FindAudio("Startup"), TweenInfo.new(9), { PlaybackSpeed = 0 }):Play()
+        TweenService:Create(Global:FindAudio("Startup"), TweenInfo.new(9), { PlaybackSpeed = 0 }):Play()
         TweenService:Create(ReactorCore.Core.Sound, TweenInfo.new(9), { PlaybackSpeed = 0 }):Play()
 
         Controls.ShutdownPanel.Shutdown.OfflineNotice.Enabled = false
@@ -211,8 +208,8 @@ function Functions:dmrStartup()
             v.OfflineNotice.TextLabel.Text = "RECONFIGURATING STARTUP PARAMETERS; PLEASE WAIT..."
         end
 
-        Global.FindAudio("Startup"):Stop()
-        Global.FindAudio("Startup").PlaybackSpeed = 1
+        Global:FindAudio("Startup"):Stop()
+        Global:FindAudio("Startup").PlaybackSpeed = 1
 
         task.wait(8)
 
@@ -223,12 +220,12 @@ function Functions:dmrStartup()
             v.OfflineNotice.TextLabel.Text = "DMR READY FOR RE-IGNITION"
         end
 
-        if Thermals.Functions:ReturnFuel() >= 10 then
-            Thermals.Functions:FuelDebug(Thermals.Functions:ReturnFuel() - 10)
+        if module.Thermals:Fire("ReturnFuel") >= 10 then
+            module.Thermals:Fire("FuelDebug", module.Thermals:Fire("ReturnFuel") - 10)
         end
 
         Controls.Start.Key.Sound:Play()
-        Global.TweenModel(Controls.Start.KeyM.KeyM, Controls.Start.KeyM.Org.CFrame, false, 0.5)
+        Global:TweenModel(Controls.Start.KeyM.KeyM, Controls.Start.KeyM.Org.CFrame, false, 0.5)
         TweenService:Create(Controls.Start.Lock_Ind, TweenInfo.new(0.5), { Color = Color3.fromRGB(27, 42, 53) }):Play()
         Controls.Start.Key.ClickDetector.MaxActivationDistance = 16
 
@@ -242,9 +239,9 @@ function Functions:dmrStartup()
         task.wait(2)
 
         Network:SignalAll("Notification", "Successful DMR Ignition. Switching to manual control...", "none", 7)
-        Global.FindAudio("Power_lasers_online"):Play()
+        Global:FindAudio("Power_lasers_online"):Play()
 
-        task.wait(Global.FindAudio("Power_lasers_online").TimeLength)
+        task.wait(Global:FindAudio("Power_lasers_online").TimeLength)
 
         Network:SignalAll("CompleteChallenge", "DMRSTARTUP")
 
@@ -274,9 +271,9 @@ function Functions:dmrStartup()
         task.wait(1.5)
 
         if StartupType == "Default" or StartupType == "Restart" then
-            Global.FindAudio("DMR_Online"):Play()
+            Global:FindAudio("DMR_Online"):Play()
         elseif StartupType == "Maintenance" then
-            Global.FindAudio("DMR Resuming normal operations"):Play()
+            Global:FindAudio("DMR Resuming normal operations"):Play()
         end
 
         Audios.HumanAnnouncements.Announcements.Disabled = false
@@ -306,21 +303,21 @@ function Functions:dmrStartup()
         end
 
         if StartupType == "Default" then
-            Global.InfoOutput("CORE", "DARK MATTER REACTOR NOW ONLINE")
+            Global:InfoOutput("CORE", "DARK MATTER REACTOR NOW ONLINE")
             Network:SignalAll("Notification", "Dark Matter Reactor ignition sequence completed, reactor core online.", "none", 5)
         elseif StartupType == "Maintenance" then
-            Global.InfoOutput("CORE", "DARK MATTER REACTOR RESUMING OPERATIONS")
+            Global:InfoOutput("CORE", "DARK MATTER REACTOR RESUMING OPERATIONS")
             Network:SignalAll("Notification", "Dark Matter Reactor re-ignition sequence completed, reactor core online.", "none", 5)
         end
 
         task.spawn(function()
-            Functions.endMusic()
+            Functions:endMusic()
         end)
 
-        PowerLasers.Functions:EnableControls()
-        Coolant.Functions:EnableControls()
-        Thermals.Functions:EnableControls()
-        Thermals.Functions:BeginThermalLoop()
+        module.PowerLasers:Fire("EnableControls")
+        module.Coolant:Fire("EnableControls")
+        module.Thermals:Fire("EnableControls")
+        module.Thermals:Fire("BeginThermalLoop")
     end
 end
 
@@ -333,16 +330,16 @@ function Functions:Instastart()
 
     for i = 1, 3 do
         Reactor.MainStabalizer["Red" .. i].Transparency = 0
-        Global.SwitchToggle(Controls.FuelLocks["Switch" .. i], "On")
+        Global:SwitchToggle(Controls.FuelLocks["Switch" .. i], "On")
         Controls.FuelLocks["Switch" .. i].Center.ClickDetector.MaxActivationDistance = 0
         FCLocks[i] = true
     end
 
-    Global.TweenModel(ReactorCore, Reactor.CoreRaised.CFrame, false, 5)
+    Global:TweenModel(ReactorCore, Reactor.CoreRaised.CFrame, false, 5)
 
     --StartCodex:Fire()
 
-    PowerLasers.Functions:InstaStart()
+    module.PowerLasers:Fire("InstaStart")
 
     for i = 1, 2 do
         Monitors.PowerBoard["GravityLaser" .. i].Color = Color3.fromRGB(131, 229, 95)
@@ -353,10 +350,10 @@ function Functions:Instastart()
     Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(0.55, 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 1)
 
     for i = 1, 6 do
-        Global.TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration.TGP5.CFrame, false, 1)
+        Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration.TGP5.CFrame, false, 1)
         Monitors.PowerBoard["PowerLaser" .. i].Color = Color3.fromRGB(131, 229, 95)
         Controls.FeedwaterSwitches["Switch" .. i].Center.ClickDetector.MaxActivationDistance = 0
-        Global.SwitchToggle(Controls.FeedwaterSwitches["Switch" .. i], "On")
+        Global:SwitchToggle(Controls.FeedwaterSwitches["Switch" .. i], "On")
         Fdwtr[i] = true
     end
 
@@ -383,12 +380,12 @@ function Functions:Instastart()
         monitor.Screen.Enabled = true
     end
 
-    Global.InfoOutput("CORE", "DARK MATTER REACTOR NOW ONLINE")
+    Global:InfoOutput("CORE", "DARK MATTER REACTOR NOW ONLINE")
 
-    PowerLasers.Functions:EnableControls()
-    Coolant.Functions:EnableControls()
-    Thermals.Functions:EnableControls()
-    Thermals.Functions:BeginThermalLoop()
+    module.PowerLasers:Fire("EnableControls")
+    module.Coolant:Fire("EnableControls")
+    module.Thermals:Fire("EnableControls")
+    module.Thermals:Fire("BeginThermalLoop")
 end
 
 function Functions:Variable(Index, Key)
@@ -404,7 +401,7 @@ local PrimerKey = function(plr)
 				Key = true
 
 				Controls.Start.Key.Sound:Play()
-				Global.TweenModel(Controls.Start.KeyM.KeyM, Controls.Start.KeyM.ToGo.CFrame, false, 0.5)
+				Global:TweenModel(Controls.Start.KeyM.KeyM, Controls.Start.KeyM.ToGo.CFrame, false, 0.5)
 				TweenService:Create(Controls.Start.Lock_Ind, TweenInfo.new(0.5), { Color = Color3.fromRGB(213, 115, 61) }):Play()
 
 				task.wait(1)
@@ -421,7 +418,7 @@ local PrimerKey = function(plr)
 				Key = false
 
 				Controls.Start.Key.Sound:Play()
-				Global.TweenModel(Controls.Start.KeyM.KeyM, Controls.Start.KeyM.Org.CFrame, false, 0.5)
+				Global:TweenModel(Controls.Start.KeyM.KeyM, Controls.Start.KeyM.Org.CFrame, false, 0.5)
 
 				task.wait(1)
 
@@ -458,7 +455,7 @@ local MainButton = function(plr)
 						task.wait(0.2)
 
 						TweenService:Create(Controls.Start.Main_Power_Button, TweenInfo.new(0.2), { ["CFrame"] = Controls.Start.Org.CFrame }):Play()
-						Functions.dmrStartup()
+						Functions:dmrStartup()
 					else
 						Network:Signal("Notification", plr, "Calibrate the PowerLasers on the left side of this desk to engage startup.", "error", 6)
 					end
@@ -477,7 +474,7 @@ end
 local function FuelLock(plr, i)
 	if not FCLocks[i] then
 		Network:SignalAll("ConsolePrint", "Fuel Cell lock " .. i .. " engaged by " .. plr.Name)
-		Global.SwitchToggle(Controls.FuelLocks["Switch" .. i], "On")
+		Global:SwitchToggle(Controls.FuelLocks["Switch" .. i], "On")
 		Controls.FuelLocks["Switch" .. i].Center.Sound:Play()
 		Controls.FuelLocks["Switch" .. i].Center.ClickDetector.MaxActivationDistance = 0
 		FCLocks[i] = true
@@ -487,7 +484,7 @@ end
 local function FeedWtr(plr, i)
 	if not Fdwtr[i] then
 		Network:SignalAll("ConsolePrint", "Feedwater Pump " .. i .. " engaged by " .. plr.Name)
-		Global.SwitchToggle(Controls.FeedwaterSwitches["Switch" .. i], "On")
+		Global:SwitchToggle(Controls.FeedwaterSwitches["Switch" .. i], "On")
 		Controls.FeedwaterSwitches["Switch" .. i].Center.Sound:Play()
 		Controls.FeedwaterSwitches["Switch" .. i].Center.ClickDetector.MaxActivationDistance = 0
 		Fdwtr[i] = true
@@ -501,14 +498,14 @@ local function CalLeft(plr)
 			Calibration = Calibration - 1
 
 			Controls.PLCalibration.Left.Button.Center.Sound:Play()
-			Global.TweenModel(Controls.PLCalibration.Left.Button, Controls.PLCalibration.Left.TGP.CFrame, true, 0.15)
-			Global.TweenModel(Controls.PLCalibration.Left.Button, Controls.PLCalibration.Left.Org.CFrame, true, 0.15)
+			Global:TweenModel(Controls.PLCalibration.Left.Button, Controls.PLCalibration.Left.TGP.CFrame, true, 0.15)
+			Global:TweenModel(Controls.PLCalibration.Left.Button, Controls.PLCalibration.Left.Org.CFrame, true, 0.15)
 
 			Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(((Calibration / 10) + 0.05), 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 6)
 
 			for i = 1, 6 do
 				Reactor.Power_Lasers["PL" .. i].Model.Model.Explosion.Move:Play()
-				Global.TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 6)
+				Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 6)
 			end
 
 			task.wait(6)
@@ -540,14 +537,14 @@ local function CalRight(plr)
 			BootDebounce = true
 			Calibration = Calibration + 1
 			Controls.PLCalibration.Right.Button.Center.Sound:Play()
-			Global.TweenModel(Controls.PLCalibration.Right.Button, Controls.PLCalibration.Right.TGP.CFrame, true, 0.15)
-			Global.TweenModel(Controls.PLCalibration.Right.Button, Controls.PLCalibration.Right.Org.CFrame, true, 0.15)
+			Global:TweenModel(Controls.PLCalibration.Right.Button, Controls.PLCalibration.Right.TGP.CFrame, true, 0.15)
+			Global:TweenModel(Controls.PLCalibration.Right.Button, Controls.PLCalibration.Right.Org.CFrame, true, 0.15)
 
 			Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(((Calibration / 10) + 0.05), 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 6)
 
 			for i = 1, 6 do
 				Reactor.Power_Lasers["PL" .. i].Model.Model.Explosion.Move:Play()
-				Global.TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 6)
+				Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 6)
 			end
 
 			task.wait(6)
@@ -615,7 +612,7 @@ function module:Init()
     }
 
 	for i = 1, 6 do
-		Global.TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 1)
+		Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 1)
 	end
 
 	Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(((Calibration / 10) + 0.05), 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 6)
@@ -625,7 +622,7 @@ function module:Init()
 	if startCalibrated then
 		if IsStudio then
 			for i = 1, 6 do
-				Global.TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration.TGP5.CFrame, false, 1)
+				Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration.TGP5.CFrame, false, 1)
 			end
 
 			Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(0.55, 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 1)
@@ -637,7 +634,7 @@ function module:Init()
 	if DebugMode == true then
 		if IsStudio then
 			task.spawn(function()
-				Functions.Instastart()
+				Functions:Instastart()
 			end)
 		end
 	end
@@ -669,8 +666,12 @@ function module:Init()
 	Connections.PLCRight = Controls.PLCalibration.Right.Button.Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
         CalRight(plr)
     end))
+    
+    module.Startup:Connect(function(Function, ...)
+		if Functions[Function] then
+			return Functions[Function](unpack({ ... }))
+		end
+    end)
 end
-
-module.Functions = Functions
 
 return module

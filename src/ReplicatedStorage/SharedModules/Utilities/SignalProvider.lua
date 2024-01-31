@@ -3,7 +3,8 @@ local SignalProvider = {}
 local Signal = shared.Core.Get("Signal", true)
 
 function module.Get(self, callback)
-	return SignalProvider[callback] or self:_Register(callback)
+	local SignalType = string.match(callback, "Function") and "BindableFunction" or "BindableEvent"
+	return SignalProvider[callback] or self:_Register(callback, SignalType)
 end
 
 function module.Remove(self, SignalName)
@@ -14,12 +15,11 @@ function module.Remove(self, SignalName)
 	SignalProvider[SignalName] = nil
 end
 
-function module._Register(self, SignalName)
+function module._Register(self, SignalName, SignalType)
 	if SignalProvider[SignalName] then
 		return warn(string.format("SignalProvider with name %s has already been registered!", SignalName))
 	end
-	local NewSignal = Signal.new()
-	NewSignal._bindableEvent.Name = string.format("ev:%s", SignalName)
+	local NewSignal = Signal.new(SignalName, SignalType)
 	SignalProvider[SignalName] = NewSignal
 	return NewSignal
 end

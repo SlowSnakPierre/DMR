@@ -38,7 +38,7 @@ function Functions:TweenModel(Model, To, Wait, Time, ...)
 
     local Data = { Style = EasingStyle, Direction = EasingDirection }
 
-    TweenNet:Tween(Model, To, Wait, Time, Data)
+    TweenNet:Tween(Model, To, Time, Data)
 
     if Wait then
         task.wait(Time)

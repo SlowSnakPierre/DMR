@@ -1,22 +1,18 @@
---[[
-    ClickDetector Anti-Spam
-]]
-
-local AntiSpam = {}
-local DelayQueue = {}
+local AntiSpam = {} -- Index: <instance> Player | Key: <int> Number of attempts
+local DelayQueue = {} -- Index: <instance> Player | Key: <boolean> Delaying
 local DefaultSpam = 15
 local module = {}
 
 function module:Make(Function, OptionalCooldownParameter)
-    local SpamStop
+	local SpamStop
 
-    if tonumber(OptionalCooldownParameter) ~= nil then
-        SpamStop = tonumber(OptionalCooldownParameter)
-    else
-        SpamStop = DefaultSpam
-    end
+	if tonumber(OptionalCooldownParameter) ~= nil then
+		SpamStop = tonumber(OptionalCooldownParameter)
+	else
+		SpamStop = DefaultSpam
+	end
 
-    local function Delay(Player)
+    local Delay = function(Player)
         DelayQueue[Player] = true
 
         task.wait(5)
@@ -24,6 +20,8 @@ function module:Make(Function, OptionalCooldownParameter)
         DelayQueue[Player] = false
         AntiSpam[Player] = 0
     end
+
+
 
     return function(Player)
         if AntiSpam[Player] == nil then

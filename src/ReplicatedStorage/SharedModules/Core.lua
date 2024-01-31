@@ -83,8 +83,17 @@ function Core._TryInit(_, moduleName, moduleFunctions)
 		local startLoadTick = tick()
 		local success = nil
 		local errmessage = nil
+		local traceback = nil
 		task.spawn(function()
-			success, errmessage = pcall(moduleFunctions.Init, moduleFunctions)
+			local function TracebackOnError(func, ...)
+				return xpcall(func, function(err)
+					errmessage = tostring(err)
+					traceback = debug.traceback()
+					return false, err
+				end, ...)
+			end
+
+			success, _ = TracebackOnError(moduleFunctions.Init, moduleFunctions)
 		end)
 		while success == nil do
 			if tick() - startLoadTick > 5 and not TookLongTime then
@@ -101,6 +110,7 @@ function Core._TryInit(_, moduleName, moduleFunctions)
 		end
 		if not success then
 			warn((("%s La méthode d'initialisation pour le service '%s' a échoué : \n%s"):format(Core:_GetTitle(), moduleName, errmessage)))
+			print(traceback)
 			table.insert(Core._LogQueue, {
 				errorMessage = ("%s La méthode d'initialisation pour le service '%s' a échoué : \n%s"):format(Core:_GetTitle(), moduleName, errmessage), 
 				errorScriptName = moduleName, 

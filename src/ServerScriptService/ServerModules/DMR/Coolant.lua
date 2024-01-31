@@ -1,12 +1,10 @@
---[[
-    "CoolantFunctions"
-]]
-
 local module = {}
 local Core = shared.Core
 local Global = Core.Get("Global")
 local Wrap = Core.Get("Wrap")
 local Network = Core.Get("Network")
+local SignalProvider = Core.Get("SignalProvider")
+module.Coolant = SignalProvider:Get("CoolantFunctions")
 
 local TweenService = game:GetService("TweenService")
 local DMR = game:GetService("Workspace"):WaitForChild("DMR")
@@ -414,8 +412,12 @@ function module:Init()
             pump2db = false
         end
     end))
+    
+    module.Coolant:Connect(function(Function, ...)
+		if Functions[Function] then
+			return Functions[Function](unpack({ ... }))
+		end
+    end)
 end
-
-module.Functions = Functions
 
 return module

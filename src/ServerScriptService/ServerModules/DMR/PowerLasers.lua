@@ -1,9 +1,7 @@
---[[
-    "PowerLaserFunctions"
-]]
-
 local module = {}
 local Core = shared.Core
+local SignalProvider = Core.Get("SignalProvider")
+module.PowerLasers = SignalProvider:Get("PowerLaserFunctions")
 
 local IsGlobal = true
 local LaserLevel = 2
@@ -439,8 +437,12 @@ function module:Init()
 			Controls.PLModeSwitch.Buttons.Left.Part.ClickDetector.MaxActivationDistance = 32
 		end
 	end))
+    
+    module.PowerLasers:Connect(function(Function, ...)
+		if Functions[Function] then
+			return Functions[Function](unpack({ ... }))
+		end
+    end)
 end
-
-module.Functions = Functions
 
 return module

@@ -2,16 +2,20 @@ local module = {}
 module.__index = module
 module.ClassName = "Signal"
 
-function module.new(bindable)
-	local Class = setmetatable({}, module)
-	Class._bindableEvent = Instance.new("BindableEvent")
-	Class._argData = nil
-	Class._argCount = nil
-	if bindable ~= nil then
-		Class._bindableEvent.Name = string.format("bindable:%s", bindable)
+function module.new(bindable, bindableType)
+	if bindableType == nil then
+		bindableType = "BindableEvent"
 	end
-	Class._source = ""
-	return Class
+    local Class = setmetatable({}, module)
+    Class._bindableEvent = Instance.new(bindableType)
+	Class._bindableType = bindableType
+    Class._argData = nil
+    Class._argCount = nil
+    if bindable ~= nil then
+        Class._bindableEvent.Name = string.format("bindable:%s", bindable)
+    end
+    Class._source = ""
+    return Class
 end
 
 function module.Fire(self, ...)
@@ -21,20 +25,28 @@ function module.Fire(self, ...)
 	end
 	self._argData = { ... }
 	self._argCount = select("#", ...)
-	self._bindableEvent:Fire()
+	if self._bindableType == "BindableFunction" then
+		return self._bindableEvent:Invoke(...)
+	else
+		self._bindableEvent.Event:Fire()
+	end
 end
 
 function module.Connect(self, callback)
-	if type(callback) ~= "function" then
-		error(("connect(%s)"):format((typeof(callback))), 2)
-	end
-	return self._bindableEvent.Event:Connect(function()
-		callback(unpack(self._argData, 1, self._argCount))
-	end)
+    if type(callback) ~= "function" then
+        error(("connect(%s)"):format((typeof(callback))), 2)
+    end
+    if self._bindableType == "BindableFunction" then
+        self._bindableEvent.OnInvoke = callback
+    else
+        return self._bindableEvent.Event:Connect(function()
+            callback(unpack(self._argData, 1, self._argCount))
+        end)
+    end
 end
 
 function module.Wait(self)
-	self._bindableEvent.Event:Wait()
+	self._bindableEvent:Wait()
 	assert(self._argData, "Missing arg data, likely due to :TweenSize/Position corrupting threadrefs.")
 	return unpack(self._argData, 1, self._argCount)
 end

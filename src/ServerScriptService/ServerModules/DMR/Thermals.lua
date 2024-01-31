@@ -1,9 +1,12 @@
---[[
-	"ThermalFunctions"
-]]
-
 local module = {}
 local Core = shared.Core
+local SignalProvider = Core.Get("SignalProvider")
+module.Thermals = SignalProvider:Get("ThermalFunctions")
+module.PowerLasers = SignalProvider:Get("PowerLaserFunctions")
+module.Coolant = SignalProvider:Get("CoolantFunctions")
+module.Meltdown = SignalProvider:Get("MeltdownFunctions")
+module.Maintenance = SignalProvider:Get("MaintenanceFunctions")
+
 local TweenService = game:GetService("TweenService")
 
 local Controls = game:GetService("Workspace"):WaitForChild("DMR"):WaitForChild("ReactorControlInterfaces")
@@ -18,11 +21,6 @@ local Settings = Core.Get("Settings")
 local CFMS = Core.Get("CFMS")
 local Network = Core.Get("Network")
 local Wrap = Core.Get("Wrap")
-
-local PowerLasers = Core.Get("PowerLasers", true)
-local Coolant = Core.Get("Coolant", true)
-local Meltdown = Core.Get("Meltdown", true)
-local Maintenance = Core.Get("Maintenance", true)
 
 local RanObj = Random.new(1337)
 
@@ -133,8 +131,8 @@ local Functions = {}
 
 function Functions:PLCycle()
 	for l = 0, 4 do
-		if PowerLasers.Functions:ReturnCurrentMode() then
-			if PowerLasers.Functions:ReturnGlobalLevel() == l then
+		if module.PowerLasers:Fire("ReturnCurrentMode") then
+			if module.PowerLasers:Fire("ReturnGlobalLevel") == l then
 				for z = 1, 3 do
 					DMR.DMRTemp = DMR.DMRTemp
 						+ (
@@ -146,7 +144,7 @@ function Functions:PLCycle()
 			end
 		else
 			for i = 1, 6 do
-				if PowerLasers.Functions:ReturnIndividualLevel(i) == l then
+				if module.PowerLasers:Fire("ReturnIndividualLevel", i) == l then
 					for z = 1, 3 do
 						DMR.DMRTemp = DMR.DMRTemp
 							+ (
@@ -164,15 +162,15 @@ end
 
 function Functions:FuelCycle()
 	for l = 0, 4 do
-		if PowerLasers.Functions:ReturnCurrentMode() then
-			if PowerLasers.Functions:ReturnGlobalLevel() == l then
+		if module.PowerLasers:Fire("ReturnCurrentMode") then
+			if module.PowerLasers:Fire("ReturnGlobalLevel") == l then
 				for z = 1, 3 do
 					Fuel[z] = Fuel[z] - ((tonumber(ReturnFuelCellType(FuelCells[z])) * (l + 1)) / Settings.FuelDepletionRate) / 3
 				end
 			end
 		else
 			for i = 1, 6 do
-				if PowerLasers.Functions:ReturnIndividualLevel(i) == l then
+				if module.PowerLasers:Fire("ReturnIndividualLevel", i) == l then
 					for z = 1, 3 do
 						Fuel[z] = Fuel[z]
 							- (
@@ -191,11 +189,11 @@ end
 
 function Functions:CoolantCycle()
 	for a = 1, 2 do
-		if Coolant.Functions:ReturnPumpsActive() == a then
+		if module.Coolant:Fire("ReturnPumpsActive") == a then
 			for b = 1, 4 do
-				if Coolant.Functions:ReturnValveNumber() == b then
+				if module.Coolant:Fire("ReturnValveNumber") == b then
 					for c = 1, 4 do
-						if Coolant.Functions:ReturnCoolantLevel() == c then
+						if module.Coolant:Fire("ReturnCoolantLevel") == c then
 							DMR.DMRTemp = DMR.DMRTemp
 								- (((0.225 * (tonumber(c) + 1)) * (tonumber(b) + 1)) * (tonumber(a) / 2))
 									^ Settings.CoolantBuff
@@ -256,6 +254,10 @@ function Functions:IntegCycle()
 	end
 end
 
+function Functions:GetRadiation()
+	return Radiation
+end
+
 function Functions:TempCheck()
 	if DMR.DMRTemp >= 1200 then
 		if not Monitors.PowerBoard.ClickToView.AlarmArr.IsPlaying and AlarmPhase == "N/A" then
@@ -265,11 +267,11 @@ function Functions:TempCheck()
 			Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 			Controls.OverheatAlarm.bell.Volume = 0.5
 			Monitors.PowerBoard.ClickToView.AlarmArr:Play()
-			Global.FindAudio("AlarmDaDaDa"):Play()
+			Global:FindAudio("AlarmDaDaDa"):Play()
 
-			task.wait(Global.FindAudio("AlarmDaDaDa").TimeLength)
+			task.wait(Global:FindAudio("AlarmDaDaDa").TimeLength)
 			Network:SignalAll("Notification", "Dark Matter Reactor exceeding safe operating parameters.", "error", 8)
-			Global.FindAudio("ExceedingSafeParamaters"):Play()
+			Global:FindAudio("ExceedingSafeParamaters"):Play()
 		end
 		if DMR.DMRTemp >= 2250 then
 			Monitors.PowerBoard.ClickToView.AlertBeep:Play()
@@ -279,12 +281,12 @@ function Functions:TempCheck()
 				Monitors.PowerBoard.ClickToView.AlarmArr.Volume = 0.25
 				Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 				Controls.OverheatAlarm.bell.Volume = 0.5
-				Global.FindAudio("AlarmDaDaDa"):Play()
+				Global:FindAudio("AlarmDaDaDa"):Play()
 
-				task.wait(Global.FindAudio("AlarmDaDaDa").TimeLength)
+				task.wait(Global:FindAudio("AlarmDaDaDa").TimeLength)
 				Network:SignalAll("Notification", "Dark Matter Reactor exceeding safe temperature limits.", "error", 8)
-				Global.FindAudio("ExceedingSafeParamaters"):Stop()
-				Global.FindAudio("ExceedingSafeTemperature"):Play()
+				Global:FindAudio("ExceedingSafeParamaters"):Stop()
+				Global:FindAudio("ExceedingSafeTemperature"):Play()
 			end
 			if DMR.DMRTemp >= 3500 then
 				if not Controls.OverheatAlarm.bell.IsPlaying and AlarmPhase == 2 then
@@ -294,18 +296,18 @@ function Functions:TempCheck()
 					Monitors.PowerBoard.ClickToView.AlarmArr.Volume = 0.25
 					Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 					Controls.OverheatAlarm.bell.Volume = 0.5
-					Global.FindAudio("AlarmDaDaDa"):Play()
+					Global:FindAudio("AlarmDaDaDa"):Play()
 					CFMS.AlarmsOperations(5)
 
-					task.wait(Global.FindAudio("AlarmDaDaDa").TimeLength)
+					task.wait(Global:FindAudio("AlarmDaDaDa").TimeLength)
 					Network:SignalAll("Notification",
 						"Dark Matter Reactor superstructure overheated. Structural integrity loss possible.",
 						"error",
 						10
 					)
-					Global.FindAudio("ExceedingSafeParamaters"):Stop()
-					Global.FindAudio("ExceedingSafeTemperature"):Stop()
-					Global.FindAudio("IntegDropping"):Play()
+					Global:FindAudio("ExceedingSafeParamaters"):Stop()
+					Global:FindAudio("ExceedingSafeTemperature"):Stop()
+					Global:FindAudio("IntegDropping"):Play()
 				end
 			elseif DMR.DMRTemp < 3200 and AlarmPhase == 3 then
 				CFMS.AlarmsOperations(0)
@@ -329,12 +331,12 @@ function Functions:IntegCheck()
 			Monitors.PowerBoard.ClickToView.AlarmArr.Volume = 0.25
 			Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 			Controls.OverheatAlarm.bell.Volume = 0.5
-			Global.FindAudio("AlarmDaDaDa"):Play()
+			Global:FindAudio("AlarmDaDaDa"):Play()
 			CFMS.AlarmsOperations(5)
 
-			task.wait(Global.FindAudio("AlarmDaDaDa").TimeLength)
+			task.wait(Global:FindAudio("AlarmDaDaDa").TimeLength)
 			Network:SignalAll("Notification", "Dark Matter Reactor superstructure integrity at 75%.", "error", 10)
-			Global.FindAudio("CoreInteg75"):Play()
+			Global:FindAudio("CoreInteg75"):Play()
 		end
 		if DMR.DMRInteg <= 50 then
 			if IntegPhase == 1 then
@@ -343,13 +345,13 @@ function Functions:IntegCheck()
 				Monitors.PowerBoard.ClickToView.AlarmArr.Volume = 0.25
 				Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 				Controls.OverheatAlarm.bell.Volume = 0.5
-				Global.FindAudio("AlarmDaDaDa"):Play()
+				Global:FindAudio("AlarmDaDaDa"):Play()
 				CFMS.AlarmsOperations(5)
 
-				task.wait(Global.FindAudio("AlarmDaDaDa").TimeLength)
+				task.wait(Global:FindAudio("AlarmDaDaDa").TimeLength)
 				Network:SignalAll("Notification", "Dark Matter Reactor superstructure integrity at 50%.", "error", 10)
-				Global.FindAudio("CoreInteg75"):Stop()
-				Global.FindAudio("CoreInteg50"):Play()
+				Global:FindAudio("CoreInteg75"):Stop()
+				Global:FindAudio("CoreInteg50"):Play()
 			end
 			if DMR.DMRInteg <= 25 then
 				if IntegPhase == 2 then
@@ -358,14 +360,14 @@ function Functions:IntegCheck()
 					Monitors.PowerBoard.ClickToView.AlarmArr.Volume = 0.25
 					Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 					Controls.OverheatAlarm.bell.Volume = 0.5
-					Global.FindAudio("AlarmDaDaDa"):Play()
+					Global:FindAudio("AlarmDaDaDa"):Play()
 					CFMS.AlarmsOperations(5)
 
-					task.wait(Global.FindAudio("AlarmDaDaDa").TimeLength)
+					task.wait(Global:FindAudio("AlarmDaDaDa").TimeLength)
 					Network:SignalAll("Notification", "Dark Matter Reactor superstructure integrity at 25%.", "error", 10)
-					Global.FindAudio("CoreInteg75"):Stop()
-					Global.FindAudio("CoreInteg50"):Stop()
-					Global.FindAudio("CoreInteg25"):Play()
+					Global:FindAudio("CoreInteg75"):Stop()
+					Global:FindAudio("CoreInteg50"):Stop()
+					Global:FindAudio("CoreInteg25"):Play()
 				end
 				if DMR.DMRInteg <= 10 and IntegPhase == 3 then
 					IntegPhase = 4
@@ -373,14 +375,16 @@ function Functions:IntegCheck()
 					Monitors.PowerBoard.ClickToView.AlarmArr.Volume = 0.25
 					Monitors.PowerBoard.ClickToView.AlertBeep.Volume = 0.5
 					Controls.OverheatAlarm.bell.Volume = 0.5
-					Global.FindAudio("CoreInteg75"):Stop()
-					Global.FindAudio("CoreInteg50"):Stop()
-					Global.FindAudio("CoreInteg25"):Stop()
+					Global:FindAudio("CoreInteg75"):Stop()
+					Global:FindAudio("CoreInteg50"):Stop()
+					Global:FindAudio("CoreInteg25"):Stop()
 					MeltdownActive = true
 
-					task.spawn(Functions.ShutdownChecks)
+					task.spawn(function()
+						Functions:ShutdownChecks()
+					end)
 
-					Meltdown.Functions:Phase1()
+					module.Meltdown:Fire("Phase1")
 				end
 			end
 		end
@@ -392,15 +396,15 @@ function Functions:FuelCheck()
 		if DMR.DMRFuel >= 0 then
 			if DMR.DMRFuel < 1 and not depdeb then
 				depdeb = true
-				PowerLasers.Functions:MeltdownDisable()
+				module.PowerLasers:Fire("MeltdownDisable")
 				TweenService:Create(ReactorCore.Core.Sound, TweenInfo.new(10), { PlaybackSpeed = 0 }):Play()
 
 				task.wait(10)
 				ReactorCore.Core.Sound:Stop()
-				Maintenance.Functions:Out()
+				module.Maintenance:Fire("Out")
 			elseif DMR.DMRFuel <= 20 and not fueldeb then
 				fueldeb = true
-				Maintenance.Functions:Under20()
+				module.Maintenance:Fire("Under20")
 			end
 		else
 			DMR.DMRFuel = 0
@@ -416,7 +420,7 @@ function Functions:ReliefRefresh(Valve)
 	Controls[cc].Tweener.Main.ClickDetector.MaxActivationDistance = 0
 	Monitors.Relief.Screen.Main["RVCap" .. Valve].Text = "COOLING"
 	Controls[cc].Tweener.Main.Sound:Play()
-	Global.TweenModel(Controls[cc].Tweener, Controls[cc].Org.CFrame, true, 0.5)
+	Global:TweenModel(Controls[cc].Tweener, Controls[cc].Org.CFrame, true, 0.5)
 	Controls[cc].Light.BrickColor = BrickColor.new("Bright red")
 	task.wait(120)
 	Controls[cc].Tweener.Main.ClickDetector.MaxActivationDistance = 32
@@ -720,14 +724,14 @@ function Functions:ShutdownPrereq()
 		Fuel[i] = Fuel[i] + 1
 	end
 	if DMR.DMRTemp <= 3000 then
-		Meltdown.Functions:ShutdownPrereq()
+		module.Meltdown:Fire("ShutdownPrereq")
 	end
 end
 
 function Functions:ShutdownChecks()
 	while MeltdownActive do
 		task.wait(6)
-		Functions.ShutdownPrereq()
+		Functions:ShutdownPrereq()
 	end
 end
 
@@ -747,8 +751,8 @@ function Functions:EndThermalLoop()
 			v.Text = "ERROR"
 		end
 	end
-	Functions.PowerBoardOff()
-	Functions.ControlRoomLightsOff()
+	Functions:PowerBoardOff()
+	Functions:ControlRoomLightsOff()
 end
 
 function Functions:BeginThermalLoop()
@@ -772,9 +776,15 @@ function Functions:BeginThermalLoop()
 
 	while CycleActive do
 		if DMR.DMRTemp >= 150 and DMR.DMRFuel > 0 then
-			CoRoutine.Wrap(Functions.PLCycle, true)
-			CoRoutine.Wrap(Functions.CoolantCycle, true)
-			CoRoutine.Wrap(Functions.ReliefCycle, true)
+			CoRoutine.Wrap(function()
+				Functions:PLCycle()
+			end, true)
+			CoRoutine.Wrap(function()
+				Functions:CoolantCycle()
+			end, true)
+			CoRoutine.Wrap(function()
+				Functions:ReliefCycle()
+			end, true)
 		elseif DMR.DMRTemp < 150 then
 			DMR.DMRTemp = 150
 		end
@@ -785,22 +795,44 @@ function Functions:BeginThermalLoop()
 			end
 		end
 
-		CoRoutine.Wrap(Functions.FuelCycle, true)
-		CoRoutine.Wrap(Functions.IntegCycle, true)
+		CoRoutine.Wrap(function()
+			Functions:FuelCycle()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:IntegCycle()
+		end, true)
 
-		CoRoutine.Wrap(Functions.TempCheck, true)
-		CoRoutine.Wrap(Functions.IntegCheck, true)
-		CoRoutine.Wrap(Functions.FuelCheck, true)
+		CoRoutine.Wrap(function()
+			Functions:TempCheck()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:IntegCheck()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:FuelCheck()
+		end, true)
 
-		CoRoutine.Wrap(Functions.Output, true)
-		CoRoutine.Wrap(Functions.TurbineOutput, true)
-		CoRoutine.Wrap(Functions.PowerBoardFlash, true)
-		CoRoutine.Wrap(Functions.ControlRoomLightsFlash, true)
+		CoRoutine.Wrap(function()
+			Functions:Output()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:TurbineOutput()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:PowerBoardFlash()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:ControlRoomLightsFlash()
+		end, true)
 
 		task.wait(1.5)
 
-		CoRoutine.Wrap(Functions.PowerBoardOff, true)
-		CoRoutine.Wrap(Functions.ControlRoomLightsOff, true)
+		CoRoutine.Wrap(function()
+			Functions:PowerBoardOff()
+		end, true)
+		CoRoutine.Wrap(function()
+			Functions:ControlRoomLightsOff()
+		end, true)
 
 		task.wait(1.5)
 	end
@@ -830,7 +862,9 @@ function Functions:RefuelFire(num, celltype)
 end
 
 function Functions:ThermalRunawayFire()
-	CoRoutine.Wrap(Functions.ThermalRunaway, true)
+	CoRoutine.Wrap(function()
+		Functions:ThermalRunaway()
+	end, true)
 end
 
 function Functions:PostMaintenance()
@@ -981,7 +1015,7 @@ function module:Init()
 						ReliefsActive = ReliefsActive - 1
 						ReliefVal[i].Value = false
 						Monitors.Relief.Screen.Main["RVActive" .. i].Text = "FALSE"
-						Functions.ReliefRefresh(i)
+						Functions:ReliefRefresh(i)
 						break
 					else
 						ReliefPressure[i] = ReliefPressure[i] + 1
@@ -1000,8 +1034,8 @@ function module:Init()
 				while TurbineBoolean[i].Value == true do
 					task.wait(3)
 					for l = 0, 4 do
-						if PowerLasers.Functions:ReturnCurrentMode() then
-							if PowerLasers.Functions:ReturnGlobalLevel() == l then
+						if module.PowerLasers:Fire("ReturnCurrentMode") then
+							if module.PowerLasers:Fire("ReturnGlobalLevel") == l then
 								TurbineGens[i].Value = string.sub(
 									((DMR.DMRTemp / l + 1) * TurbineValve[i].Value / RanObj:NextInteger(9000, 9500))
 										/ 60,
@@ -1011,7 +1045,7 @@ function module:Init()
 							end
 						else
 							for v = 1, 6 do
-								if PowerLasers.Functions:ReturnIndividualLevel(v) == l then
+								if module.PowerLasers:Fire("ReturnIndividualLevel", v) == l then
 									TurbineGens[i].Value = string.sub(
 										(
 											(DMR.DMRTemp / ((l + 1) / 6))
@@ -1037,7 +1071,7 @@ function module:Init()
 				ReliefDebounce[i] = true
 				Network:SignalAll("ConsolePrint", "Relief valve " .. i .. " toggled on by " .. Player.Name)
 				Controls[cc].Tweener.Main.Sound:Play()
-				Global.TweenModel(Controls[cc].Tweener, Controls[cc].To.CFrame, true, 0.5)
+				Global:TweenModel(Controls[cc].Tweener, Controls[cc].To.CFrame, true, 0.5)
 				Controls[cc].Light.BrickColor = BrickColor.new("Lime green")
 				ReliefVal[i].Value = true
 				ReliefsActive = ReliefsActive + 1
@@ -1047,7 +1081,7 @@ function module:Init()
 				ReliefDebounce[i] = true
 				Network:SignalAll("ConsolePrint", "Relief valve " .. i .. " toggled off by " .. Player.Name)
 				Controls[cc].Tweener.Main.Sound:Play()
-				Global.TweenModel(Controls[cc].Tweener, Controls[cc].Org.CFrame, true, 0.5)
+				Global:TweenModel(Controls[cc].Tweener, Controls[cc].Org.CFrame, true, 0.5)
 				Controls[cc].Light.BrickColor = BrickColor.new("Black")
 				ReliefVal[i].Value = false
 				ReliefsActive = ReliefsActive - 1
@@ -1116,7 +1150,7 @@ function module:Init()
 						dtb[i] = true
 						Network:SignalAll("ConsolePrint", "Steam turbine #" .. i .. " toggled on by " .. Player.Name)
 						Controls["Turb" .. i].Center.Sound:Play()
-						Global.SwitchToggle(Controls["Turb" .. i], "On")
+						Global:SwitchToggle(Controls["Turb" .. i], "On")
 						Controls["Turbine" .. i .. "Valve"].Screen.SurfaceGui.Offline.Visible = false
 						Controls["Turbine" .. i .. "Valve"].Screen.SurfaceGui.Online.Visible = true
 						Monitors.Turbine.Screen.Sys:FindFirstChild("Valve" .. i).Text = "OPENING"
@@ -1148,7 +1182,7 @@ function module:Init()
 						dtb[i] = true
 						Network:SignalAll("ConsolePrint", "Steam turbine #" .. i .. " toggled off by " .. Player.Name)
 						Controls["Turb" .. i].Center.Sound:Play()
-						Global.SwitchToggle(Controls["Turb" .. i], "Off")
+						Global:SwitchToggle(Controls["Turb" .. i], "Off")
 						Controls["Turbine" .. i .. "Valve"].Screen.SurfaceGui.Offline.Visible = true
 						Controls["Turbine" .. i .. "Valve"].Screen.SurfaceGui.Online.Visible = false
 						Monitors.Turbine.Screen.Sys:FindFirstChild("Valve" .. i).Text = "CLOSING"
@@ -1201,8 +1235,12 @@ function module:Init()
 			Controls.OverheatAlarm.Material = Enum.Material.SmoothPlastic
 		end
 	end))
-end
 
-module.Functions = Functions
+    module.Thermals:Connect(function(Function, ...)
+		if Functions[Function] then
+			return Functions[Function](unpack({ ... }))
+		end
+    end)
+end
 
 return module

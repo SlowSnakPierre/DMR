@@ -1,9 +1,9 @@
---[[
-    "MeltdownFunctions"
-]]
-
 local module = {}
 local Core = shared.Core
+local SignalProvider = Core.Get("SignalProvider")
+module.Meltdown = SignalProvider:Get("MeltdownFunctions")
+module.Thermals = SignalProvider:Get("ThermalFunctions")
+module.PowerLasers = SignalProvider:Get("PowerLaserFunctions")
 
 local Badges = {
 	ReactorShutdown = 2124482126,
@@ -50,8 +50,6 @@ local BadgeService = game:GetService("BadgeService")
 
 local NSD = Core.Get("NSDHole", true)
 local Hazmat = Core.Get("Hazmat_Handler", true)
-local PowerLasers = Core.Get("PowerLasers", true)
-local Thermals = Core.Get("Thermals", true)
 local Hazmat_Func = Hazmat.Functions
 local CraneCollapseToPL3 = Core.Get("CraneCollapseToPL3")
 local Globals = Core.Get("Global")
@@ -288,7 +286,7 @@ function Functions:PowerLaserFailure()
             if DestructionVariables[PLVariable] == false then
                 DestructionVariables[PLVariable] = true
 
-                PowerLasers.Functions:MeltdownDisable()
+                module.PowerLasers:Fire("MeltdownDisable")
 
                 TweenService:Create(Monitors.PowerBoard["PowerLaser" .. tonumber(Ran)], TweenInfo.new(2), { Color = Color3.fromRGB(190, 104, 98) }):Play()
                 Reactor.MainStabalizer[Blue].Position = Vector3.new(Reactor.MainStabalizer[Blue].Position.X, 62, Reactor.MainStabalizer[Blue].Position.Z)
@@ -369,7 +367,7 @@ function Functions:ShutdownPre()
 end
 
 function Functions:Shutdown()
-    PowerLasers.Functions:DisableControls()
+    module.PowerLasers:Fire("DisableControls")
 
     Network:SignalAll("CompleteChallenge", "SAVEDMR")
 
@@ -394,7 +392,7 @@ function Functions:Shutdown()
     ReactorCore.Core.Sound:Stop()
 
     Globals:TweenModel(ReactorCore, CFrame.new(ReactorCore.Centre.Position.X, ReactorCore.Centre.Position.Y - 57, ReactorCore.Centre.Position.Z), false, 15)
-    Thermals.Functions:DisableControls()
+    module.Thermals:Fire("DisableControls")
 
     for i = 1, 4 do
         local S = "Sprinkler" .. i
@@ -407,7 +405,7 @@ function Functions:Shutdown()
     CFMS.AlarmsOperations(0)
     workspace.DMR.Core_Damage.Core_Fire.Fire.Enabled = false
 
-    Thermals.Functions:EndThermalLoop()
+    module.Thermals:Fire("EndThermalLoop")
     Controls.OverheatAlarm.bell:Stop()
     Controls.Monitors.PowerBoard.ClickToView.AlarmArr:Stop()
     Controls.Monitors.PowerBoard.ClickToView.AlertBeep:Stop()
@@ -794,8 +792,8 @@ function Functions:Phase2()
     CFMS.AlarmsOperations(2)
 
     Hazmat_Func:HZState("Dead")
-    PowerLasers.Functions:MeltdownDisable()
-    Thermals.Functions:ThermalRunawayFire()
+    module.PowerLasers:Fire("MeltdownDisable")
+    module.Thermals:Fire("ThermalRunawayFire")
 
     TweenService:Create(Lighting, TweenInfo.new(200, Enum.EasingStyle.Sine, Enum.EasingDirection.In), { FogColor = Color3.fromRGB(132, 60, 38) }):Play()
     TweenService:Create(Lighting, TweenInfo.new(200, Enum.EasingStyle.Sine, Enum.EasingDirection.In), { FogEnd = 500 }):Play()
@@ -1071,8 +1069,6 @@ local Disconnect = function(...)
 end
 
 function module:Init()
-	print("Compiling")
-
 	Disconnect(Connections)
 
 	CoRoutine.Clear()
@@ -1305,8 +1301,12 @@ function module:Init()
 			Network:Signal("Notification", Player, "You can only use this during the meltdown!", "error", 5)
 		end
 	end))
+    
+    module.Meltdown:Connect(function(Function, ...)
+		if Functions[Function] then
+			return Functions[Function](unpack({ ... }))
+		end
+    end)
 end
-
-module.Functions = Functions
 
 return module

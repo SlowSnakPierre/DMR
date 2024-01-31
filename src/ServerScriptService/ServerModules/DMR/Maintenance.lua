@@ -1,12 +1,14 @@
---[[
-    "MaintenanceFunctions"
-]]
-
 local module = {}
 local Core = shared.Core
 local Wrap = Core.Get("Wrap")
 local Network = Core.Get("Network")
 local CoRoutine = Core.Get("CoRoutine")
+local SignalProvider = Core.Get("SignalProvider")
+module.Thermals = SignalProvider:Get("ThermalFunctions")
+module.PowerLasers = SignalProvider:Get("PowerLaserFunctions")
+module.Coolant = SignalProvider:Get("CoolantFunctions")
+module.Startup = SignalProvider:Get("StartupFunctions")
+module.Maintenance = SignalProvider:Get("MaintenanceFunctions")
 
 local Debounce = false
 local FuelUnder20 = false
@@ -46,12 +48,6 @@ local ReactorCore = Reactor.Core
 local Global = Core.Get("Global")
 local CellStorage = Core.Get("FuelCellStorage")
 local Connections = {}
-
-local Thermals = Core.Get("Thermals", true)
-local Startup = Core.Get("Startup", true)
-local Startup_Func = Startup.Functions
-local Coolant = Core.Get("Coolant", true)
-local PowerLasers = Core.Get("PowerLasers", true)
 
 --#region Functions
 local Functions = {}
@@ -103,10 +99,10 @@ function Functions:End()
 
 	for i = 1, 3 do
 		FuelCells[i] = true
-		Thermals.Functions:RefuelFire(i, FuelCellsType[i])
+		module.Thermals:Fire("RefuelFire", i, FuelCellsType[i])
 	end
 
-	Thermals.Functions:PostMaintenance()
+	module.Thermals:Fire("PostMaintenance")
 
 	MaintenanceActive = false
 	OutOfFuel = false
@@ -129,9 +125,9 @@ function Functions:End()
 		Keys[i] = false
 	end
 
-	Startup_Func:Variable("Key", false)
-	Startup_Func:Variable("CanTurn", true)
-	Startup_Func:Variable("BootDebounce", false)
+	module.Startup:Fire("Variable", "Key", false)
+	module.Startup:Fire("Variable", "CanTurn", true)
+	module.Startup:Fire("Variable", "BootDebounce", false)
 
 	Controls.Start.Key.ClickDetector.MaxActivationDistance = 16
 	Controls.Start.Key.Sound:Play()
@@ -213,7 +209,7 @@ local function MaintButton(plr)
 
 				task.wait(Global:FindAudio("Main-ten-ance_Completed").TimeLength - 2)
 
-				Startup_Func:Variable("StartupType", "Maintenance")
+				module.Startup:Fire("Variable", "StartupType", "Maintenance")
 				Functions:End()
 			else
 				Debounce = true
@@ -239,18 +235,18 @@ local function MaintButton(plr)
 				if (FuelUnder20 and OutOfFuel) or (FuelUnder20 and not OutOfFuel) then
 					Debounce = true
 
-					PowerLasers.Functions:DisableControls()
+					module.PowerLasers:Fire("DisableControls")
 
 					Controls.PLModeSwitch.Buttons.Left.Part.ClickDetector.MaxActivationDistance = 0
 					Controls.PLModeSwitch.Buttons.Right.Part.ClickDetector.MaxActivationDistance = 0
 
-					Thermals.Functions:DisableControls()
-					Coolant.Functions:DisableControls()
-					Thermals.Functions:EndThermalLoop()
+					module.Thermals:Fire("DisableControls")
+					module.Coolant:Fire("DisableControls")
+					module.Thermals:Fire("EndThermalLoop")
 
 					Network:SignalAll("ConsolePrint", "Maintenance Mode engaged by " .. plr.Name)
 
-					TweenService:Create(Thermals.Radiation, TweenInfo.new(7), { Value = 0 }):Play()
+					TweenService:Create(module.Thermals:Fire("GetRadiation"), TweenInfo.new(7), { Value = 0 }):Play()
 
 					for i = 1, 6 do
 						TweenService:Create(Monitors.PowerBoard["PowerLaser" .. i], TweenInfo.new(7), { Color = Color3.fromRGB(213, 115, 61) }):Play()
@@ -538,8 +534,12 @@ function module:Init()
 	end
 
 	Connections.MButton = Controls.MaintenancePanel.Button.ClickDetector.MouseClick:Connect(Wrap:Make(MaintButton))
+    
+    module.Maintenance:Connect(function(Function, ...)
+		if Functions[Function] then
+			return Functions[Function](unpack({ ... }))
+		end
+    end)
 end
-
-module.Functions = Functions
 
 return module
