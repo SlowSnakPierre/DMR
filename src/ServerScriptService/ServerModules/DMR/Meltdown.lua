@@ -57,7 +57,7 @@ local CFMS = Core.Get("CFMS")
 local Energy = Core.Get("CoolEffectsScript")
 local CoRoutine = Core.Get("CoRoutine")
 local Network = Core.Get("Network")
-local Wrap = Core.Get("Wrap")
+local Wrap = Core.Get("Wrap", true)
 
 local Reactor = workspace.DMR.ReactorCore
 local Controls = workspace.DMR.ReactorControlInterfaces
@@ -479,7 +479,7 @@ function Functions:MeltdownSequence()
 end
 
 function Functions:Phase1()
-    workspace.Audios.HumanAnnouncements.Announcements.Disabled = true
+    --workspace.Audios.HumanAnnouncements.Announcements.Disabled = true
     workspace.Audios.Effects.OtherUnworldlyNoises.Sounds.Disabled = true
 
     Functions:Rumble()
@@ -1069,6 +1069,13 @@ local Disconnect = function(...)
 end
 
 function module:Init()
+    if not script:FindFirstChild("Countdown") then
+        local NumberValue = Instance.new("NumberValue")
+        NumberValue.Name = "Countdown"
+        NumberValue.Value = 0
+        NumberValue.Parent = script
+    end
+
 	Disconnect(Connections)
 
 	CoRoutine.Clear()

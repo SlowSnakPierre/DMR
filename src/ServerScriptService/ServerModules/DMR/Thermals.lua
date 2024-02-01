@@ -20,9 +20,9 @@ local Global = Core.Get("Global")
 local Settings = Core.Get("Settings")
 local CFMS = Core.Get("CFMS")
 local Network = Core.Get("Network")
-local Wrap = Core.Get("Wrap")
+local Wrap = Core.Get("Wrap", true)
 
-local RanObj = Random.new(1337)
+local RanObj = Random.new(time())
 
 local Connections = {}
 

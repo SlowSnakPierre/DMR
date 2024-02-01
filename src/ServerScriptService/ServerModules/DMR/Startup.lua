@@ -6,7 +6,7 @@ module.Thermals = SignalProvider:Get("ThermalFunctions")
 module.PowerLasers = SignalProvider:Get("PowerLaserFunctions")
 module.Coolant = SignalProvider:Get("CoolantFunctions")
 
-local RanObj = Random.new(6969)
+local RanObj = Random.new(time())
 
 local BootDebounce = false
 local CanTurn = true
@@ -43,11 +43,12 @@ local Monitors = Controls.Monitors
 local Reactor = workspace.DMR.ReactorCore
 local ReactorCore = Reactor.Core
 
-local Wrap = Core.Get("Wrap")
+local Wrap = Core.Get("Wrap", true)
 local Network = Core.Get("Network")
 local Global = Core.Get("Global")
 local CFMS = Core.Get("CFMS")
 local Energy = Core.Get("CoolEffectsScript")
+local TimeBoards = Core.Get("TimeBoards")
 
 local Connections = {}
 
@@ -65,6 +66,9 @@ end
 function Functions:dmrStartup()
     CanTurn = false
     if StartupType == "Default" then
+        task.spawn(function()
+            TimeBoards:Run()
+        end)
         Network:SignalAll("Notification", "Dark Matter Reactor ignition sequence initiated.", "none", 5)
         -- Audios.HumanAnnouncements.Announcements.Disabled = false
         Controls.ShutdownPanel.Shutdown.OfflineNotice.TextLabel.Text = "PENDING REACTOR IGNITION SEQUENCE COMPLETION..."
@@ -104,8 +108,11 @@ function Functions:dmrStartup()
     end
 
     if StartupType ~= "Default" then
+        task.spawn(function()
+            TimeBoards:Run()
+        end)
         Network:SignalAll("Notification", "Dark Matter Reactor re-ignition sequence initiated.", "none", 5)
-        Audios.HumanAnnouncements.Announcements.Disabled = false
+        --Audios.HumanAnnouncements.Announcements.Disabled = false
 
         Controls.ShutdownPanel.Shutdown.OfflineNotice.TextLabel.Text = "PENDING REACTOR RE-IGNITION SEQUENCE COMPLETION..."
 
@@ -276,7 +283,7 @@ function Functions:dmrStartup()
             Global:FindAudio("DMR Resuming normal operations"):Play()
         end
 
-        Audios.HumanAnnouncements.Announcements.Disabled = false
+        --Audios.HumanAnnouncements.Announcements.Disabled = false
         CFMS.AlarmsOperations(0)
 
         for _, thing in pairs(workspace.DMR.ReactorControlInterfaces.Monitors:GetChildren()) do
@@ -322,6 +329,9 @@ function Functions:dmrStartup()
 end
 
 function Functions:Instastart()
+    task.spawn(function()
+        TimeBoards:Run()
+    end)
     BootDebounce = true
     CanTurn = false
     Calibrated = true
@@ -524,7 +534,7 @@ local function CalLeft(plr)
 				Controls.PLCalibration.C.Light.BrickColor = BrickColor.new("Really black")
 			end
 
-			task.wait(1)
+            task.wait(1)
 
 			BootDebounce = false
 		end
@@ -562,8 +572,8 @@ local function CalRight(plr)
 				Controls.PLCalibration.C.Light.Material = Enum.Material.SmoothPlastic
 				Controls.PLCalibration.C.Light.BrickColor = BrickColor.new("Really black")
 			end
-
-			task.wait(1)
+            
+            task.wait(1)
 
 			BootDebounce = false
 		end
@@ -587,85 +597,95 @@ local Disconnect = function(...)
 end
 
 function module:Init()
-	Disconnect(Connections)
+    task.spawn(function()
+        Disconnect(Connections)
 
-    BootDebounce = false
-    CanTurn = true
-    Key = false
-    StartupType = "Default"
-    Calibration = ((RanObj:NextInteger(1, 2) - 1) * 8) + 1
-    Calibrated = false
+        BootDebounce = false
+        CanTurn = true
+        Key = false
+        StartupType = "Default"
+        Calibration = ((RanObj:NextInteger(1, 2) - 1) * 8) + 1
+        Calibrated = false
 
-    FCLocks = {
-        [1] = false,
-        [2] = false,
-        [3] = false,
-    }
+        FCLocks = {
+            [1] = false,
+            [2] = false,
+            [3] = false,
+        }
 
-    Fdwtr = {
-        [1] = false,
-        [2] = false,
-        [3] = false,
-        [4] = false,
-        [5] = false,
-        [6] = false,
-    }
+        Fdwtr = {
+            [1] = false,
+            [2] = false,
+            [3] = false,
+            [4] = false,
+            [5] = false,
+            [6] = false,
+        }
 
-	for i = 1, 6 do
-		Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 1)
-	end
+        for i = 1, 6 do
+            Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration["TGP" .. Calibration].CFrame, false, 1)
+        end
 
-	Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(((Calibration / 10) + 0.05), 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 6)
+        Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(((Calibration / 10) + 0.05), 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 6)
 
-	task.wait(2)
+        task.wait(2)
 
-	if startCalibrated then
-		if IsStudio then
-			for i = 1, 6 do
-				Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration.TGP5.CFrame, false, 1)
-			end
+        if startCalibrated then
+            if IsStudio then
+                for i = 1, 6 do
+                    Global:TweenModel(Reactor.Power_Lasers["PL" .. i].Model.Model, Reactor.Power_Lasers["PL" .. i].Model.Calibration.TGP5.CFrame, false, 1)
+                end
 
-			Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(0.55, 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 1)
+				Controls.PLCalibration.PowerLaserCalib.Screen.Frame.Bar.Meter:TweenPosition(UDim2.new(0.55, 0, 0, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Sine, 1)
+				
+				Controls.PLCalibration.NC.Light.Material = Enum.Material.SmoothPlastic
+				Controls.PLCalibration.NC.Light.BrickColor = BrickColor.new("Really black")
+				Controls.PLCalibration.C.Light.Material = Enum.Material.Neon
+				Controls.PLCalibration.C.Light.Color = Color3.fromRGB(131, 229, 95)
 
-			Calibrated = true
-		end
-	end
+				Calibration = 5
+                Calibrated = true
+            end
+        end
 
-	if DebugMode == true then
-		if IsStudio then
-			task.spawn(function()
-				Functions:Instastart()
-			end)
-		end
-	end
+        if DebugMode == true then
+            if IsStudio then
+                task.spawn(function()
+                    Functions:Instastart()
+                end)
+            end
+        end
 
-	for i = 1, 3 do
-		Connections["FuelL" .. i] = Controls.FuelLocks["Switch" .. i].Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
-            FuelLock(plr, i)
+        for i = 1, 3 do
+            Connections["FuelL" .. i] = Controls.FuelLocks["Switch" .. i].Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
+                FuelLock(plr, i)
+            end))
+        end
+
+        for i = 1, 6 do
+            Connections["FdWater" .. i] = Controls.FeedwaterSwitches["Switch" .. i].Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
+                FeedWtr(plr, i)
+            end))
+        end
+
+        Connections.MButton = Controls.Start.Main_Power_Button.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
+            MainButton(plr)
         end))
-	end
 
-    for i = 1, 6 do
-		Connections["FdWater" .. i] = Controls.FeedwaterSwitches["Switch" .. i].Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
-            FeedWtr(plr, i)
+        Connections.PrimeKey = Controls.Start.Key.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
+            PrimerKey(plr)
         end))
-	end
 
-    Connections.MButton = Controls.Start.Main_Power_Button.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
-		MainButton(plr)
-	end))
+        Connections.PLCLeft = Controls.PLCalibration.Left.Button.Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
+            CalLeft(plr)
+        end))
 
-    Connections.PrimeKey = Controls.Start.Key.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
-		PrimerKey(plr)
-	end))
+        Connections.PLCRight = Controls.PLCalibration.Right.Button.Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
+            CalRight(plr)
+        end))
+    end)
 
-    Connections.PLCLeft = Controls.PLCalibration.Left.Button.Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
-		CalLeft(plr)
-	end))
-
-	Connections.PLCRight = Controls.PLCalibration.Right.Button.Center.ClickDetector.MouseClick:Connect(Wrap:Make(function(plr)
-        CalRight(plr)
-    end))
+    TimeBoards:Reset()
     
     module.Startup:Connect(function(Function, ...)
 		if Functions[Function] then

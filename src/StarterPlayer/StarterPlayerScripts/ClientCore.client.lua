@@ -4,7 +4,8 @@ shared.Core = Core
 local load = tick()
 
 Core.BulkLoad(ReplicatedStorage.ClientModules, ReplicatedStorage.SharedModules)
---Core.BulkGet("PerformanceService", "DebugService", "UserInterface")
+-- "PerformanceService", "DebugService", "UserInterface"
+Core.BulkGet("Tween", "ViewCamera")
 
 print("[CLIENT] BulkLoad fini !")
 

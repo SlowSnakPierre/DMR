@@ -40,7 +40,7 @@ local TweenService = game:GetService("TweenService")
 
 local Globals = Core.Get("Global")
 local Network = Core.Get("Network")
-local Wrap = Core.Get("Wrap")
+local Wrap = Core.Get("Wrap", true)
 
 local Controls = game:GetService("Workspace").DMR.ReactorControlInterfaces
 local LaserControls = Controls.PowerLasers
@@ -56,7 +56,7 @@ local Functions = {}
 function Functions:ChangeGlobalLevel(Level)
     for i = 1, 6 do
         local ls = "Blue" .. i
-        Globals.MultiTween(Stabilizers[ls], "Transparency", LaserTrans[Level], false, 1)
+        Globals:MultiTween(Stabilizers[ls], "Transparency", LaserTrans[Level], false, 1)
     end
 
     local gl = "Global" .. Level
@@ -75,7 +75,7 @@ end
 
 function Functions:ChangeIndividualLevel(Laser, Level, TweenMonitor)
     local ls = "Blue" .. Laser
-    Globals.MultiTween(Stabilizers[ls], "Transparency", LaserTrans[Level], false, 1)
+    Globals:MultiTween(Stabilizers[ls], "Transparency", LaserTrans[Level], false, 1)
     LaserLevels[Laser] = Level
     if TweenMonitor == true then
         Functions:UpdatePercentage(Laser, Level)
@@ -87,15 +87,15 @@ end
 
 function Functions:DramaticStartup()
     for _, Value in pairs(LaserParts) do
-        Globals.MultiTween(Stabilizers[Value], "Transparency", 0, false, 10)
+        Globals:MultiTween(Stabilizers[Value], "Transparency", 0, false, 10)
     end
     Reactor.Core.Core.Sound:Play()
-    Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 1.1, true, 10)
+    Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 1.1, true, 10)
 end
 
 function Functions:InstaStart()
     for _, Value in pairs(LaserParts) do
-        Globals.MultiTween(Stabilizers[Value], "Transparency", 0, false, 1)
+        Globals:MultiTween(Stabilizers[Value], "Transparency", 0, false, 1)
     end
     Reactor.Core.Core.Sound.PlaybackSpeed = 1
     task.wait(1)
@@ -149,23 +149,23 @@ end
 
 function Functions:UpdateGlobalPercentage(Level)
     if Level == 0 then
-        Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 0.7, false, 0.75)
+        Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 0.7, false, 0.75)
         TweenService:Create(GlobalScreenVal, TweenInfo.new(0.75, Enum.EasingStyle.Linear), { Value = 0 }):Play()
     end
     if Level == 1 then
-        Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 0.8, false, 0.75)
+        Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 0.8, false, 0.75)
         TweenService:Create(GlobalScreenVal, TweenInfo.new(0.75, Enum.EasingStyle.Linear), { Value = 25 }):Play()
     end
     if Level == 2 then
-        Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 0.9, false, 0.75)
+        Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 0.9, false, 0.75)
         TweenService:Create(GlobalScreenVal, TweenInfo.new(0.75, Enum.EasingStyle.Linear), { Value = 50 }):Play()
     end
     if Level == 3 then
-        Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 1, false, 0.75)
+        Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 1, false, 0.75)
         TweenService:Create(GlobalScreenVal, TweenInfo.new(0.75, Enum.EasingStyle.Linear), { Value = 75 }):Play()
     end
     if Level == 4 then
-        Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 1.1, false, 0.75)
+        Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", 1.1, false, 0.75)
         TweenService:Create(GlobalScreenVal, TweenInfo.new(0.75, Enum.EasingStyle.Linear), { Value = 100 }):Play()
     end
 end
@@ -302,15 +302,15 @@ function module:Init()
 				gbdb = false
 
 				LaserControls[gl].Button.Center.Sound:Play()
-				Globals.MultiTween(LaserControls[gl].Button.Center, "CFrame", LaserControls[gl].TGP.CFrame, true, 0.2)
+				Globals:MultiTween(LaserControls[gl].Button.Center, "CFrame", LaserControls[gl].TGP.CFrame, true, 0.2)
 
                 task.wait(0.2)
 
                 Functions:ChangeGlobalLevel(i)
 
                 Network:SignalAll("ConsolePrint", "Power lasers set to " .. i .. " by " .. Player.Name)
-				Globals.InfoOutput("PL", "GLOBAL LEVEL SET TO " .. i)
-				Globals.MultiTween(LaserControls[gl].Button.Center, "CFrame", LaserControls[gl].Org.CFrame, true, 0.2)
+				Globals:InfoOutput("PL", "GLOBAL LEVEL SET TO " .. i)
+				Globals:MultiTween(LaserControls[gl].Button.Center, "CFrame", LaserControls[gl].Org.CFrame, true, 0.2)
 
                 task.wait(2)
 
@@ -329,10 +329,10 @@ function module:Init()
 				LaserControls[ls].Screen.Sound:Play()
 
                 if LaserLevels[i] >= 0 and LaserLevels[i] < 4 then
-					Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", Reactor.Core.Core.Sound.PlaybackSpeed + 0.015, false, 0.75)
+					Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", Reactor.Core.Core.Sound.PlaybackSpeed + 0.015, false, 0.75)
 					Functions:ChangeIndividualLevel(i, LaserLevels[i] + 1, true)
 					Network:SignalAll("ConsolePrint", "Power laser " .. i .. " level set to " .. LaserLevels[i] .. " by" .. Player.Name)
-					Globals.InfoOutput("PL", "LASER #" .. i .. " LEVEL SET TO " .. LaserLevels[i])
+					Globals:InfoOutput("PL", "LASER #" .. i .. " LEVEL SET TO " .. LaserLevels[i])
 				end
 
                 lldb = true
@@ -345,10 +345,10 @@ function module:Init()
 				LaserControls[ls].Screen.Sound:Play()
 
                 if LaserLevels[i] > 0 and LaserLevels[i] <= 4 then
-					Globals.MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", Reactor.Core.Core.Sound.PlaybackSpeed - 0.015, false, 0.75)
+					Globals:MultiTween(Reactor.Core.Core.Sound, "PlaybackSpeed", Reactor.Core.Core.Sound.PlaybackSpeed - 0.015, false, 0.75)
 					Functions:ChangeIndividualLevel(i, LaserLevels[i] - 1, true)
 					Network:SignalAll("ConsolePrint", "Power laser " .. i .. " level set to " .. LaserLevels[i] .. " by " .. Player.Name)
-					Globals.InfoOutput("PL", "LASER #" .. i .. " LEVEL SET TO " .. LaserLevels[i])
+					Globals:InfoOutput("PL", "LASER #" .. i .. " LEVEL SET TO " .. LaserLevels[i])
 				end
 
                 lldb = true
@@ -367,7 +367,7 @@ function module:Init()
 			Controls.PLModeSwitch.ReadyInd.Light.BrickColor = BrickColor.new("Black")
 			Controls.PLModeSwitch.WaitInd.Light.BrickColor = BrickColor.new("Bright yellow")
 
-            Globals.InfoOutput("PL", "MODE SWITCHED TO GLOBAL")
+            Globals:InfoOutput("PL", "MODE SWITCHED TO GLOBAL")
 
             Controls.PLModeSwitch.Indicator.BrickColor = BrickColor.new("Bright red")
 			Monitors.PowerLaser.Screen.Global.Visible = true
@@ -407,7 +407,7 @@ function module:Init()
 			Controls.PLModeSwitch.ReadyInd.Light.BrickColor = BrickColor.new("Black")
 			Controls.PLModeSwitch.WaitInd.Light.BrickColor = BrickColor.new("Bright yellow")
 
-            Globals.InfoOutput("PL", "MODE SWITCHED TO SEPARATE")
+            Globals:InfoOutput("PL", "MODE SWITCHED TO SEPARATE")
 
             Controls.PLModeSwitch.Indicator.BrickColor = BrickColor.new("Lapis")
 			Monitors.PowerLaser.Screen.Global.Visible = false

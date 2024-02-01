@@ -1,6 +1,6 @@
 local module = {}
 local Core = shared.Core
-local Wrap = Core.Get("Wrap")
+local Wrap = Core.Get("Wrap", true)
 local Network = Core.Get("Network")
 local CoRoutine = Core.Get("CoRoutine")
 local SignalProvider = Core.Get("SignalProvider")

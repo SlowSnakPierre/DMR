@@ -1,7 +1,7 @@
 local module = {}
 local Core = shared.Core
 local Global = Core.Get("Global")
-local Wrap = Core.Get("Wrap")
+local Wrap = Core.Get("Wrap", true)
 local Network = Core.Get("Network")
 local SignalProvider = Core.Get("SignalProvider")
 module.Coolant = SignalProvider:Get("CoolantFunctions")
@@ -220,7 +220,7 @@ function module:Init()
     val.Value = 100
     Connections.CoolantValueChanged = val.Changed:Connect(function(v)
         Monitors:WaitForChild("Coolant"):WaitForChild("Screen"):WaitForChild("Main"):WaitForChild("Current").Text = v .. "%"
-        Monitors:WaitForChild("PowerBoard"):WaitForChild("Diagram1"):WaitForChild("Monitoring"):WaitForChild("CoolantLevel").text = v .. "%"
+        Monitors:WaitForChild("PowerBoard"):WaitForChild("Diagram1"):WaitForChild("Monitoring"):WaitForChild("CoolantLevel").Text = v .. "%"
     end)
 
     GlobalScreenVal = val
@@ -248,7 +248,7 @@ function module:Init()
         end))
     end
 
-    for k = 1, 4 do
+    for k = 0, 4 do
         local gl = "Button"..k
         Connections[gl] = CoolantControls:WaitForChild(gl):WaitForChild("Button"):WaitForChild("Center"):WaitForChild("ClickDetector").MouseClick:Connect(Wrap:Make(function(Player)
             if bdb then

@@ -8,6 +8,6 @@ Core.BulkLoad(ServerScriptService.ServerModules, ReplicatedStorage.SharedModules
 print("[SERVER] BulkLoad fini !")
 
 --"PerformanceManager", "DebugManager", "RobuxPurchaseManager", "BadgeServer", "DataManager",
-Core.BulkGet("LoggingService", "Hazmat_Handler", ServerScriptService.ServerModules.DMR)
+Core.BulkGet("LoggingService", "Hazmat_Handler", "Cam_Hook", ServerScriptService.ServerModules.DMR, "EnergySys", "KillBricks")
 
 print("[SERVER] Chargement terminé ! ("..tick()-load.." secondes )")
